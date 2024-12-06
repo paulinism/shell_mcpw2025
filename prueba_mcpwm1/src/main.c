@@ -18,9 +18,9 @@ static const char* TAG = "Motor_Control";
 #define GPIO_PWM2B_OUT 26   // Fase CL (low)
 
 // Pines de entrada para los sensores Hall
-#define GPIO_HALL_U    19
-#define GPIO_HALL_V    18
-#define GPIO_HALL_W    5
+#define GPIO_HALL_A    19
+#define GPIO_HALL_B    18
+#define GPIO_HALL_C    5
 
 // Dead time en microsegundos (50 ms = 50000 us)
 #define DEAD_TIME_US 50000
@@ -82,7 +82,7 @@ esp_err_t init_gpio(void)
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2B, GPIO_PWM2B_OUT);
     // Configurar pines GPIO para los sensores Hall como entradas con pull-up interno
     gpio_config_t hall_config = {
-        .pin_bit_mask = (1ULL << GPIO_HALL_U) | (1ULL << GPIO_HALL_V) | (1ULL << GPIO_HALL_W),
+        .pin_bit_mask = (1ULL << GPIO_HALL_A) | (1ULL << GPIO_HALL_B) | (1ULL << GPIO_HALL_C),
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -142,6 +142,15 @@ void IRAM_ATTR isr_handler(void* arg)
 {
     int hall_state = read_hall_sensors();
     switch_phase(hall_state);
+}
+
+// Función para leer el estado de los sensores Hall
+int read_hall_sensors(void)
+{
+    int hall_a = gpio_get_level(GPIO_HALL_A);
+    int hall_b = gpio_get_level(GPIO_HALL_B);
+    int hall_c = gpio_get_level(GPIO_HALL_C);
+    return (hall_a << 2) | (hall_b << 1) | hall_c;
 }
 
 // Función para cambiar la fase de conmutación del motor
