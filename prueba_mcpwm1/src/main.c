@@ -10,12 +10,12 @@
 static const char* TAG = "Motor_Control";
 
 // Pines de salida para el puente H trifásico
-#define GPIO_PWM0A_OUT 33   // Fase U alta
-#define GPIO_PWM0B_OUT 25   // Fase U baja
-#define GPIO_PWM1A_OUT 32   // Fase V alta
-#define GPIO_PWM1B_OUT 14   // Fase V baja
-#define GPIO_PWM2A_OUT 27  // Fase W alta
-#define GPIO_PWM2B_OUT 26   // Fase W baja
+#define GPIO_PWM0A_OUT 33   // Fase AH (high)
+#define GPIO_PWM0B_OUT 25   // Fase AL (low)
+#define GPIO_PWM1A_OUT 32   // Fase BH (high)
+#define GPIO_PWM1B_OUT 14   // Fase BL (low)
+#define GPIO_PWM2A_OUT 27  // Fase CH (high)
+#define GPIO_PWM2B_OUT 26   // Fase CL (low)
 
 // Dead time en microsegundos (50 ms = 50000 us)
 #define DEAD_TIME_US 50000
@@ -30,7 +30,7 @@ int duty_cycle = 50; // Ciclo de trabajo inicial (0-100)
 // Declaración de funciones
 esp_err_t init_gpio(void);
 esp_err_t init_mcpwm(void);
-esp_err_t set_pwm_duty(int dutyU, int dutyV, int dutyW);
+esp_err_t set_pwm_duty(int dutyA, int dutyB, int dutyC);
 void IRAM_ATTR isr_handler(void* arg);
 void switch_phase(void);
 
@@ -60,7 +60,7 @@ esp_err_t init_gpio(void)
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0B, GPIO_PWM0B_OUT);
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1A, GPIO_PWM1A_OUT);
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1B, GPIO_PWM1B_OUT);
-    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, GPIO_PWM2A_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, GPIO_PWM2A_OUT);   // checar esto
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2B, GPIO_PWM2B_OUT);
     return ESP_OK;
 }
@@ -71,7 +71,7 @@ esp_err_t init_mcpwm(void)
     mcpwm_config_t pwm_config = {
         .frequency = PWM_FREQUENCY,
         .cmpr_a = 0,   // Inicialmente apagado
-        .cmpr_b = 0,   // Inicialmente apagado
+    //    .cmpr_b = 0,   // Inicialmente apagado (probablemente sin usar)
         .duty_mode = MCPWM_DUTY_MODE_0,
         .counter_mode = MCPWM_UP_DOWN_COUNTER // Modo up-down para generar PWM simétrico
     };
@@ -99,14 +99,14 @@ esp_err_t init_mcpwm(void)
 }
 
 // Función para establecer el ciclo de trabajo PWM para cada fase
-esp_err_t set_pwm_duty(int dutyU, int dutyV, int dutyW)
+esp_err_t set_pwm_duty(int dutyA, int dutyB, int dutyC)
 {
-    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, dutyU);
-    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, 100 - dutyU); // Complementario para fase baja
-    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, dutyV);
-    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, 100 - dutyV); // Complementario para fase baja
-    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A, dutyW);
-    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_B, 100 - dutyW); // Complementario para fase baja
+    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, dutyA);
+    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, 100 - dutyA); // Complementario para fase baja
+    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, dutyB);
+    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, 100 - dutyB); // Complementario para fase baja
+    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A, dutyC);
+    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_B, 100 - dutyC); // Complementario para fase baja
     return ESP_OK;
 }
 
@@ -122,19 +122,19 @@ void switch_phase(void)
     current_phase = (current_phase + 1) % 6; // 6 pasos de conmutación para un motor trifásico
 
     switch (current_phase) {
-        case 0: // Fase U alta, V baja, W flotante
+        case 0: // Fase A alta, B baja, C flotante
             set_pwm_duty(duty_cycle, 0, 0);
             break;
-        case 1: // Fase U alta, W baja, V flotante
+        case 1: // Fase A alta, C baja, B flotante
             set_pwm_duty(duty_cycle, 0, 100-duty_cycle);
             break;
-        case 2: // Fase V alta, W baja, U flotante
+        case 2: // Fase B alta, C baja, A flotante
              set_pwm_duty(0, duty_cycle, 100-duty_cycle);
             break;
-        case 3: // Fase V alta, U baja, W flotante
+        case 3: // Fase B alta, A baja, C flotante
             set_pwm_duty(0, duty_cycle, 0);
             break;
-        case 4: // Fase W alta, U baja, V flotante
+        case 4: // Fase C alta, A baja, B flotante
             set_pwm_duty(100-duty_cycle, 0, duty_cycle);
             break;
         case 5: // Fase W alta, V baja, U flotante
