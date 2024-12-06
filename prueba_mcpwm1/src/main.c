@@ -28,7 +28,7 @@
 #define ADC_CHANNEL_VSENSE ADC1_CHANNEL_6
 
 // Variables globales
-uint8_t hallToMotor[8] = {255, 255, 255, 255, 255, 255, 255, 255}; // Tabla de estados del motor
+uint8_t hallToMotor[8] = {255, 255, 255, 255, 255, 255, 255, 255}; // Tabla de estados del motor. Overwrite this with the output of the hall auto-idedntification
 int duty_cycle = 0;
 int current_ma = 0, voltage_mv = 0, current_target_ma = 0;
 int hall = 0;
