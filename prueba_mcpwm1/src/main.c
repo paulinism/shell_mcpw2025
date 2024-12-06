@@ -1,4 +1,97 @@
 #include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/mcpwm.h"
+#include "driver/adc.h"
+#include "driver/gpio.h"
+
+// Configuración de usuario
+#define IDENTIFY_HALLS_ON_BOOT true
+#define IDENTIFY_HALLS_REVERSE false
+
+#define THROTTLE_LOW 600
+#define THROTTLE_HIGH 2650
+#define PHASE_MAX_CURRENT_MA 6000
+#define BATTERY_MAX_CURRENT_MA 3000
+#define CURRENT_CONTROL_LOOP_GAIN 200
+
+#define PWM_FREQ 16000 // Frecuencia PWM en Hz
+#define DUTY_CYCLE_MAX 90 // Máximo duty cycle (0-100%)
+
+#define LED_PIN GPIO_NUM_2
+#define HALL_1_PIN GPIO_NUM_13
+#define HALL_2_PIN GPIO_NUM_14
+#define HALL_3_PIN GPIO_NUM_15
+
+#define ADC_CHANNEL_THROTTLE ADC1_CHANNEL_0
+#define ADC_CHANNEL_ISENSE ADC1_CHANNEL_3
+#define ADC_CHANNEL_VSENSE ADC1_CHANNEL_6
+
+// Variables globales
+uint8_t hallToMotor[8] = {255, 255, 255, 255, 255, 255, 255, 255}; // Tabla de estados del motor
+int duty_cycle = 0;
+int current_ma = 0, voltage_mv = 0, current_target_ma = 0;
+int hall = 0;
+
+
+mcpwm_config_t pwm_config;
+
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, GPIO_PWM0A_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0B, GPIO_PWM0B_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1A, GPIO_PWM1A_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1B, GPIO_PWM1B_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, GPIO_PWM2A_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2B, GPIO_PWM2B_OUT);
+    
+    Motor.TabelaLimite = 0;
+    // Center aligned pwm mode complementary mode
+    // 15Khz frequency
+    // 95% initial duty cibly
+    pwm_config.frequency = 30000;    //frequency 
+    pwm_config.cmpr_a = 95.0;       // Duty en porcentaje
+    //pwm_config.cmpr_b = pwm_config.cmpr_a;    (?)    
+    pwm_config.counter_mode = MCPWM_UP_DOWN_COUNTER;
+    pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config);   //Configure PWM1A & PWM1B with above settings
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_2, &pwm_config);   //Configure PWM2A & PWM2B with above settings   
+
+	  // deadtime (see clock source changes in mcpwm.c file)
+    mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_ACTIVE_HIGH_COMPLIMENT_MODE, 80, 80);   // 1us deadtime
+    mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_ACTIVE_HIGH_COMPLIMENT_MODE, 80, 80);   
+    mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_ACTIVE_HIGH_COMPLIMENT_MODE, 80, 80);
+    
+    // TEZ interrupts (TIMERS in ZERO before ascending)
+    MCPWM[MCPWM_UNIT_0]->int_ena.val = BIT(3) | BIT(4) | BIT(5); // /*A PWM timer X TEZ event will trigger this interrupt*/  
+    mcpwm_isr_register(MCPWM_UNIT_0, isr_handler, NULL, ESP_INTR_FLAG_IRAM, NULL);  //Set ISR Handler
+
+    // ------ READ THIS
+    // mcpwm_sync_signal_t is defined only to SYNC0/1/2 that are for GPIO sync
+    // In order to sync Timer1 and Timer2 with Timer0 
+    // Pass 1 to mcpwm_sync_signal_t sync_sig in mcpwm_sync_enable
+    // 1 is equal to "PWM timer0 sync_out" in PWM_TIMER_SYNCI_CFG_REG.PWM_TIMER1/2_SYNCISEL
+    // Phase (last parameter) is zero.
+    mcpwm_sync_enable(MCPWM_UNIT_0, MCPWM_TIMER_1, 1, 0);   
+    mcpwm_sync_enable(MCPWM_UNIT_0, MCPWM_TIMER_2, 1, 0);  
+
+    // Timer0 is our sync out. When it is equal to zero and before ascending sync out is triggered, so Timer1 and Timer2 stands in sync_in with Timer0.
+    // When Timer0 is zero Timer1 and Timer2 is forced to phase defined in last parameter in functions above (0).
+    // Make Timer0 sync out in TEZ
+    MCPWM[MCPWM_UNIT_0]->timer[MCPWM_TIMER_0].sync.out_sel = 1;
+
+
+    // esp32_technical_reference_manual_en.pdf around pages 439
+    // mcpwm.h
+    // mcpwm_struct.h
+
+
+
+
+
+
+/*
+#include <stdio.h>
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -180,3 +273,4 @@ void switch_phase(int hall_state)
             break;
     }
 }
+*/
