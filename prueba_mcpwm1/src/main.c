@@ -80,6 +80,15 @@ esp_err_t init_gpio(void)
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1B, GPIO_PWM1B_OUT);
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, GPIO_PWM2A_OUT);   // checar esto
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2B, GPIO_PWM2B_OUT);
+    // Configurar pines GPIO para los sensores Hall como entradas con pull-up interno
+    gpio_config_t hall_config = {
+        .pin_bit_mask = (1ULL << GPIO_HALL_U) | (1ULL << GPIO_HALL_V) | (1ULL << GPIO_HALL_W),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&hall_config);
     return ESP_OK;
 }
 
