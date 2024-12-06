@@ -41,7 +41,7 @@ const int hall_table[8][3] = {
     {1, 0, 0},  // Fase 4
     {1, 0, 1},  // Fase 5
     {1, 1, 0},  // Fase 6
-    {0, 0, 0}   // Estado inválido
+    {1, 1, 1}   // Estado inválido
 };
 
 // Declaración de funciones
