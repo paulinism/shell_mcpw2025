@@ -17,6 +17,11 @@ static const char* TAG = "Motor_Control";
 #define GPIO_PWM2A_OUT 27  // Fase CH (high)
 #define GPIO_PWM2B_OUT 26   // Fase CL (low)
 
+// Pines de entrada para los sensores Hall
+#define GPIO_HALL_U    19
+#define GPIO_HALL_V    18
+#define GPIO_HALL_W    5
+
 // Dead time en microsegundos (50 ms = 50000 us)
 #define DEAD_TIME_US 50000
 
@@ -26,6 +31,18 @@ static const char* TAG = "Motor_Control";
 // Variables para el control de fase
 volatile int current_phase = 0; // 0-5: 6 pasos de conmutación
 int duty_cycle = 50; // Ciclo de trabajo inicial (0-100)
+
+// Tabla de conmutación basada en sensores Hall
+const int hall_table[8][3] = {
+    {0, 0, 0},  // Estado inválido
+    {0, 0, 1},  // Fase 1
+    {0, 1, 0},  // Fase 2
+    {0, 1, 1},  // Fase 3
+    {1, 0, 0},  // Fase 4
+    {1, 0, 1},  // Fase 5
+    {1, 1, 0},  // Fase 6
+    {0, 0, 0}   // Estado inválido
+};
 
 // Declaración de funciones
 esp_err_t init_gpio(void);
