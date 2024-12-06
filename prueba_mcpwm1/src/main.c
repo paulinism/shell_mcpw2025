@@ -50,6 +50,7 @@ esp_err_t init_mcpwm(void);
 esp_err_t set_pwm_duty(int dutyA, int dutyB, int dutyC);
 void IRAM_ATTR isr_handler(void* arg);
 void switch_phase(void);
+int read_hall_sensors(void);
 
 // Timer para las interrupciones de mitad de onda
 esp_timer_handle_t half_wave_timer;
