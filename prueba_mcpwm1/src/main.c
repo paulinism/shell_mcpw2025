@@ -153,29 +153,30 @@ int read_hall_sensors(void)
     return (hall_a << 2) | (hall_b << 1) | hall_c;
 }
 
-// Función para cambiar la fase de conmutación del motor
-void switch_phase(void)
+// Función para cambiar la fase de conmutación del motor basada en el estado de los sensores Hall
+void switch_phase(int hall_state)
 {
-    current_phase = (current_phase + 1) % 6; // 6 pasos de conmutación para un motor trifásico
-
-    switch (current_phase) {
-        case 0: // Fase A alta, B baja, C flotante
-            set_pwm_duty(duty_cycle, 0, 0);
+    switch (hall_state) {
+        case 1: // 001
+            set_pwm_duty(duty_cycle, 0, 100-duty_cycle); // Fase U alta, W baja, V flotante
             break;
-        case 1: // Fase A alta, C baja, B flotante
-            set_pwm_duty(duty_cycle, 0, 100-duty_cycle);
+        case 2: // 010
+            set_pwm_duty(100-duty_cycle, duty_cycle, 0); // Fase W alta, V baja, U flotante
             break;
-        case 2: // Fase B alta, C baja, A flotante
-             set_pwm_duty(0, duty_cycle, 100-duty_cycle);
+        case 3: // 011
+            set_pwm_duty(0, duty_cycle, 100-duty_cycle); // Fase V alta, W baja, U flotante
             break;
-        case 3: // Fase B alta, A baja, C flotante
-            set_pwm_duty(0, duty_cycle, 0);
+        case 4: // 100
+            set_pwm_duty(duty_cycle, 100-duty_cycle, 0); // Fase U alta, V baja, W flotante
             break;
-        case 4: // Fase C alta, A baja, B flotante
-            set_pwm_duty(100-duty_cycle, 0, duty_cycle);
+        case 5: // 101
+            set_pwm_duty(100-duty_cycle, 0, duty_cycle); // Fase W alta, U baja, V flotante
             break;
-        case 5: // Fase C alta, B baja, A flotante
-            set_pwm_duty(100-duty_cycle, duty_cycle, 0);
+        case 6: // 110
+            set_pwm_duty(0, 100-duty_cycle, duty_cycle); // Fase V alta, U baja, W flotante
+            break;
+        default: // Estado inválido o no esperado, detener el motor
+            set_pwm_duty(0, 0, 0);
             break;
     }
 }
