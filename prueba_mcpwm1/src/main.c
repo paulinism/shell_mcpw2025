@@ -137,7 +137,7 @@ void switch_phase(void)
         case 4: // Fase C alta, A baja, B flotante
             set_pwm_duty(100-duty_cycle, 0, duty_cycle);
             break;
-        case 5: // Fase W alta, V baja, U flotante
+        case 5: // Fase C alta, B baja, A flotante
             set_pwm_duty(100-duty_cycle, duty_cycle, 0);
             break;
     }
