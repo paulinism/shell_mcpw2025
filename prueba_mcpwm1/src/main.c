@@ -140,7 +140,8 @@ esp_err_t set_pwm_duty(int dutyA, int dutyB, int dutyC)
 // ISR para la interrupción de mitad de onda
 void IRAM_ATTR isr_handler(void* arg)
 {
-    switch_phase();
+    int hall_state = read_hall_sensors();
+    switch_phase(hall_state);
 }
 
 // Función para cambiar la fase de conmutación del motor
